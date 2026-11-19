@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Memory Management in Operating Systems</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font:18px/1.5 'Segoe UI',system-ui,sans-serif;background:#0f172a;color:#e2e8f0}
+header{padding:14px 28px;background:#111c33;border-bottom:1px solid #263449}h1{margin:0;font-size:24px}h1 span{color:#38bdf8}
+nav{display:flex;gap:6px;flex-wrap:wrap;padding:10px 28px;background:#0b1325;position:sticky;top:0;z-index:5}
+nav button{font:inherit;font-size:15px;padding:6px 12px;border-radius:20px;border:1px solid #334155;background:#16233b;color:#cbd5e1;cursor:pointer}
+nav button.on{background:#38bdf8;color:#04202e;font-weight:700;border-color:#38bdf8}
+.sec{display:none;padding:20px 28px 40px;max-width:1400px;margin:auto}.sec.on{display:block}
+h2{font-size:30px;margin:0 0 8px;color:#38bdf8}
+.def{background:#16233b;border-left:5px solid #38bdf8;padding:10px 16px;border-radius:8px;margin:0 0 18px;font-size:19px}
+.grid{display:grid;grid-template-columns:1.7fr 1fr;gap:20px}@media(max-width:1000px){.grid{grid-template-columns:1fr}}
+.demo,.side>div{background:#1e293b;border-radius:14px;padding:18px}.side>div{margin-bottom:14px}
+.side h4{margin:0 0 6px;color:#fbbf24;font-size:15px;text-transform:uppercase;letter-spacing:1px}
+.msg{min-height:96px;font-size:19px}.ex{font-size:17px;color:#cbd5e1}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;align-items:center}
+button,select,input[type=number]{font:inherit;font-size:17px;padding:8px 18px;border-radius:8px;border:0;background:#38bdf8;color:#04202e;font-weight:600;cursor:pointer}
+button.g{background:#334155;color:#e2e8f0}button.on2{outline:3px solid #fbbf24}
+input[type=number]{width:100px;background:#e2e8f0;cursor:text}input[type=range]{width:100%;height:30px}
+.row{display:flex;gap:14px;align-items:center;justify-content:space-around;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:120px}.col>b{text-align:center;color:#94a3b8;font-size:15px}
+.box{padding:10px 16px;border-radius:8px;border:2px solid #475569;text-align:center;font-weight:700;transition:.5s}
+.os{background:#475569}.empty{border-style:dashed;color:#64748b}.dim{opacity:.25}
+.arr{font-size:30px;color:#38bdf8}
+.mem{display:flex;height:100px;border:2px solid #64748b;border-radius:8px;overflow:hidden}
+.part{display:flex;border-right:2px solid #0f172a;overflow:hidden;transition:.5s}
+.fill,.free,.waste{display:flex;flex-direction:column;justify-content:center;align-items:center;font-weight:700;color:#fff;overflow:hidden}
+.fill,.waste{height:100%}.free{width:100%;background:#0f172a;border:2px dashed #64748b;color:#94a3b8}
+.waste{background:repeating-linear-gradient(45deg,#ef4444,#ef4444 6px,#991b1b 6px,#991b1b 12px)}
+small{font-weight:500;font-size:14px}.lab{display:flex;margin-top:6px;font-size:14px;color:#94a3b8}.lab span{flex:1;text-align:center}
+.brow{display:flex;align-items:center;gap:10px;margin:8px 0}.brow>span{width:110px;font-size:15px;color:#94a3b8}
+.bar{display:flex;height:42px;border:2px solid #64748b;border-radius:6px;overflow:hidden}.bar.hl{border-color:#fbbf24;box-shadow:0 0 12px #fbbf24}
+.bar div{display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;overflow:hidden;white-space:nowrap}
+.bar .fr{background:repeating-linear-gradient(45deg,#1e293b,#1e293b 6px,#0f172a 6px,#0f172a 12px);color:#94a3b8}
+.chip{display:inline-block;min-width:38px;text-align:center;padding:4px 8px;margin:3px;border-radius:6px;font-weight:700;color:#fff;border:2px solid transparent}
+.chip.ok{background:#16a34a}.chip.no{background:#dc2626}.chip.now{border-color:#fff;transform:scale(1.25)}.chip.past{opacity:.4}
+.fr3{display:flex;gap:16px;justify-content:center;margin:16px 0}
+.frame{width:100px;height:100px;border:3px solid #64748b;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:#fff;transition:.4s}
+.frame small{color:#cbd5e1}.frame.f{box-shadow:0 0 18px #ef4444;border-color:#ef4444}.frame.h{box-shadow:0 0 18px #22c55e;border-color:#22c55e}
+.stat{display:flex;gap:20px;justify-content:center;font-size:20px;font-weight:700}.red{color:#f87171}.grn{color:#4ade80}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #475569;padding:6px 10px;text-align:center}th{background:#334155}tr.hl td{background:#78350f}
+.calc{background:#0f172a;border-radius:8px;padding:12px;margin-top:14px;font-size:19px;font-family:Consolas,monospace}
+.pg{padding:8px;border-radius:8px;text-align:center;font-weight:700;color:#fff;border:3px solid transparent;transition:.3s}.pg.act{border-color:#fff;box-shadow:0 0 14px #fff}.pg:not(.act){opacity:.35}
+.seg5{position:relative;height:80px;background:#0f172a;border:2px solid #64748b;border-radius:8px;margin-top:10px}
+.seg5 div{position:absolute;top:0;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff}
+.seg5 i{position:absolute;top:-8px;height:96px;width:4px;background:#fff;box-shadow:0 0 8px #fff}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
+.card{background:#1e293b;border-radius:12px;padding:14px 18px;border-top:4px solid #38bdf8}.card b{color:#38bdf8}
+.ok2{color:#4ade80;font-weight:700}.bad{color:#f87171;font-weight:700}
+.ubar{display:flex;align-items:flex-end;gap:8px;height:170px;margin-top:10px}.ubar div{flex:1;background:#334155;border-radius:6px 6px 0 0;text-align:center;font-weight:700;transition:.4s;padding-top:4px}.ubar div.cur{background:#38bdf8;color:#04202e}.ubar div.cur.t{background:#ef4444;color:#fff}
+.ram8{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.ram8 div{height:46px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;background:#0f172a;border:2px dashed #475569}
+</style></head><body>
+<header><h1>Memory Management <span>in Operating Systems</span></h1></header>
+<nav id="nav"></nav>
+
+<!-- 1 -->
+<section class="sec" id="s0"><h2>1. Introduction to Memory Management</h2>
+<p class="def"><b>Memory management</b> = the OS job of giving RAM to programs, tracking what is used, and taking it back when done.</p>
+<div class="grid"><div class="demo">
+<div class="row"><div class="col"><b>DISK (programs)</b><div id="d1" class="col"></div></div><span class="arr">➜</span>
+<div class="col"><b>RAM (main memory)</b><div id="ram1" class="col"></div></div><span class="arr">➜</span>
+<div class="col"><b>CPU</b><div class="box" style="font-size:20px" id="cpu1"></div></div></div>
+<div class="ctl"><button onclick="a1=Math.min(4,a1+1);r1()">Next ▶</button><button class="g" onclick="a1=Math.max(0,a1-1);r1()">◀ Previous</button><button class="g" onclick="a1=0;r1()">Reset</button></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t1"></div></div>
+<div><h4>Example</h4><div class="ex">Double-click Chrome → OS finds free RAM → copies Chrome from disk into RAM → CPU runs it.</div></div></div></div></section>
+
+<!-- 2 -->
+<section class="sec" id="s1"><h2>2. Memory Allocation</h2>
+<p class="def"><b>Fixed partitioning:</b> RAM cut into equal-size slots in advance. <b>Variable partitioning:</b> each process gets exactly the size it needs.</p>
+<div class="grid"><div class="demo">
+<div class="ctl" style="margin:0 0 14px"><button id="b2f" onclick="m2='f';k2=0;r2()">Fixed</button><button id="b2v" class="g" onclick="m2='v';k2=0;r2()">Variable</button></div>
+<div class="mem" id="mem2"></div><div class="lab" id="lab2"></div>
+<div class="ctl"><button onclick="k2++;r2()">Next ▶</button><button class="g" onclick="k2--;r2()">◀ Previous</button><button class="g" onclick="k2=0;r2()">Reset</button></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t2"></div></div>
+<div><h4>Key terms</h4><div class="ex"><span class="bad">Internal fragmentation</span> = wasted space <i>inside</i> an allocated block (red stripes).<br><span class="bad">External fragmentation</span> = free space is scattered in small holes, so a big process can't fit.</div></div>
+<div><h4>Example</h4><div class="ex">Old systems like IBM OS/360 MFT used fixed partitions; MVT used variable ones.</div></div></div></div></section>
+
+<!-- 3 -->
+<section class="sec" id="s2"><h2>3. Allocation Algorithms</h2>
+<p class="def">When a process arrives, which free block should the OS choose? Free blocks (KB): 100, 500, 200, 300, 600. Processes: P1=212, P2=417, P3=112, P4=426.</p>
+<div class="grid"><div class="demo">
+<div class="ctl" style="margin:0 0 10px"><button id="a3first" onclick="al='first';k3=0;r3()">First Fit</button><button id="a3best" class="g" onclick="al='best';k3=0;r3()">Best Fit</button><button id="a3worst" class="g" onclick="al='worst';k3=0;r3()">Worst Fit</button></div>
+<div id="q3"></div><div id="bl3"></div>
+<div class="ctl"><button onclick="k3=Math.min(4,k3+1);r3()">Allocate next ▶</button><button class="g" onclick="k3=Math.max(0,k3-1);r3()">◀ Undo</button><button class="g" onclick="k3=0;r3()">Reset</button></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t3"></div></div>
+<div><h4>Rules</h4><div class="ex"><b>First:</b> first block big enough (fast).<br><b>Best:</b> smallest block big enough (least leftover).<br><b>Worst:</b> largest block (big leftover stays usable).</div></div>
+<div><h4>Try this</h4><div class="ex">Run all three to the end. Only <b>Best Fit</b> fits all four processes here!</div></div></div></div></section>
+
+<!-- 4 -->
+<section class="sec" id="s3"><h2>4. Paging</h2>
+<p class="def">Process is cut into equal <b>pages</b>; RAM into equal <b>frames</b>. The <b>page table</b> maps page → frame, so pages can sit anywhere in RAM. Page size = 4 bytes.</p>
+<div class="grid"><div class="demo">
+<div class="row" style="align-items:flex-start"><div class="col"><b>LOGICAL (process)</b><div id="lg4" class="col"></div></div>
+<div class="col"><b>PAGE TABLE</b><table id="pt4"></table></div>
+<div class="col"><b>PHYSICAL (RAM)</b><div id="ph4" class="col" style="gap:3px"></div></div></div>
+<div class="calc" id="c4"></div>
+<div class="ctl" style="display:block"><b>Logical address: <span id="v4"></span></b><input type="range" id="sl4" min="0" max="15" value="13" oninput="r4()"></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t4">Move the slider to pick a logical address (0–15). The CPU gives the page number + offset; the page table gives the frame.</div></div>
+<div><h4>Formula</h4><div class="ex">Page = address ÷ page size<br>Offset = address mod page size<br>Physical = Frame × page size + Offset</div></div>
+<div><h4>Example</h4><div class="ex">A 16-byte program loaded into scattered frames 5, 2, 7, 0 — no need for 16 continuous bytes.</div></div></div></div></section>
+
+<!-- 5 -->
+<section class="sec" id="s4"><h2>5. Segmentation</h2>
+<p class="def">Program is split into logical <b>segments</b> (Code, Data, Stack) of different sizes. Each has a <b>base</b> (start address) and <b>limit</b> (length).</p>
+<div class="grid"><div class="demo">
+<table><tr><th>Segment</th><th>Base</th><th>Limit</th></tr><tr id="r5_0"><td>0 · Code</td><td>1000</td><td>400</td></tr><tr id="r5_1"><td>1 · Data</td><td>2000</td><td>300</td></tr><tr id="r5_2"><td>2 · Stack</td><td>3000</td><td>200</td></tr></table>
+<div class="seg5" id="sg5"></div><div class="lab"><span style="text-align:left">0</span><span>1000</span><span>2000</span><span>3000</span><span style="text-align:right">3400</span></div>
+<div class="ctl">Segment <select id="sel5" onchange="r5()"><option value="0">0 Code</option><option value="1">1 Data</option><option value="2">2 Stack</option></select> Offset <input type="number" id="o5" value="120" min="0" oninput="r5()"></div>
+<div class="ctl"><button class="g" onclick="$('sel5').value=0;$('o5').value=120;r5()">Valid example</button><button class="g" onclick="$('sel5').value=0;$('o5').value=450;r5()">Invalid example</button></div>
+<div class="calc" id="c5"></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t5"></div></div>
+<div><h4>Rule</h4><div class="ex">If offset &lt; limit → physical = base + offset.<br>Otherwise the OS raises a <b>trap</b> (segmentation fault).</div></div>
+<div><h4>Example</h4><div class="ex">Accessing <code>arr[500]</code> of a 300-byte data segment → "Segmentation fault" in C.</div></div></div></div></section>
+
+<!-- 6 -->
+<section class="sec" id="s5"><h2>6. Virtual Memory</h2>
+<p class="def"><b>Virtual memory</b> lets a program be larger than RAM by keeping extra pages on disk. <b>Demand paging</b> loads a page only when it is first needed. A missing page causes a <b>page fault</b>.</p>
+<div class="grid"><div class="demo"><div id="sim6"></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="sim6t"></div></div>
+<div><h4>Page fault steps</h4><div class="ex">1. CPU asks for page not in RAM → trap<br>2. OS finds page on disk<br>3. Loads it into a free frame<br>4. Updates page table, retries</div></div>
+<div><h4>Example</h4><div class="ex">A 2 GB game runs on 1 GB free RAM — only the levels you play are loaded.</div></div></div></div></section>
+
+<!-- 7 -->
+<section class="sec" id="s6"><h2>7. Page Replacement</h2>
+<p class="def">When RAM is full and a page fault occurs, the OS must <b>evict</b> one page. Goal: fewest page faults. RAM = 3 frames.</p>
+<div class="grid"><div class="demo"><div id="sim7"></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="sim7t"></div></div>
+<div><h4>Algorithms</h4><div class="ex"><b>FIFO:</b> evict the oldest page.<br><b>LRU:</b> evict the least recently used.<br><b>Optimal:</b> evict the page needed farthest in future (best, but needs future knowledge).</div></div>
+<div><h4>Try this</h4><div class="ex">Run each to the end and compare faults: FIFO 15, LRU 12, Optimal 9.</div></div></div></div></section>
+
+<!-- 8 -->
+<section class="sec" id="s7"><h2>8. Thrashing</h2>
+<p class="def"><b>Thrashing</b> = the system spends more time swapping pages in and out than doing real work, because processes don't have enough frames.</p>
+<div class="grid"><div class="demo">
+<div class="ram8" id="ram8"></div>
+<div style="margin-top:6px;color:#94a3b8">RAM = 12 frames. Each process needs <b>3 frames</b> to run well.</div>
+<div style="margin-top:14px"><b>CPU utilization</b> by number of processes</div><div class="ubar" id="ub8"></div>
+<div class="ctl"><button onclick="n8=Math.min(8,n8+1);r8()">➕ Add process</button><button class="g" onclick="n8=Math.max(1,n8-1);r8()">➖ Remove</button><button class="g" onclick="n8=2;r8()">Reset</button></div></div>
+<div class="side"><div><h4>What is happening</h4><div class="msg" id="t8"></div></div>
+<div><h4>Why it happens</h4><div class="ex">Too many processes → few frames each → constant page faults → CPU waits for disk → OS thinks CPU is idle and adds even more processes!</div></div>
+<div><h4>Fix</h4><div class="ex">Reduce the number of running processes, or add RAM.</div></div></div></div></section>
+
+<!-- Summary -->
+<section class="sec" id="s8"><h2>Summary</h2>
+<p class="def">Memory management gives every program safe, efficient use of limited RAM.</p>
+<div class="cards">
+<div class="card"><b>1. Introduction</b><br>OS loads programs from disk to RAM so the CPU can run them.</div>
+<div class="card"><b>2. Allocation</b><br>Fixed → internal fragmentation. Variable → external fragmentation.</div>
+<div class="card"><b>3. Fit algorithms</b><br>First (fast), Best (least leftover), Worst (largest block).</div>
+<div class="card"><b>4. Paging</b><br>Pages → frames via page table. Physical = frame × size + offset.</div>
+<div class="card"><b>5. Segmentation</b><br>Logical segments with base + limit; offset ≥ limit → trap.</div>
+<div class="card"><b>6. Virtual memory</b><br>Pages loaded on demand; a missing page = page fault.</div>
+<div class="card"><b>7. Page replacement</b><br>FIFO, LRU, Optimal decide which page to evict. Optimal is the benchmark.</div>
+<div class="card"><b>8. Thrashing</b><br>Too little memory per process → endless swapping, CPU utilization collapses.</div></div>
+<p style="text-align:center;font-size:24px;margin-top:30px;color:#38bdf8">Thank you! Questions?</p></section>
+
+<script>
+const $=i=>document.getElementById(i),PC=['#3b82f6','#22c55e','#f59e0b','#a855f7','#ec4899','#14b8a6','#ef4444','#eab308'];
+const names=['1 Intro','2 Allocation','3 Fit Algorithms','4 Paging','5 Segmentation','6 Virtual Memory','7 Page Replacement','8 Thrashing','Summary'];let cur=0;
+function show(i){cur=i;names.forEach((_,j)=>{$('s'+j).classList.toggle('on',j==i);$('nav').children[j].classList.toggle('on',j==i)});scrollTo(0,0)}
+names.forEach((n,i)=>{const b=document.createElement('button');b.textContent=n;b.onclick=()=>show(i);$('nav').appendChild(b)});
+document.addEventListener('keydown',e=>{if(['INPUT','SELECT'].includes(e.target.tagName))return;if(e.key=='ArrowRight')show(Math.min(8,cur+1));if(e.key=='ArrowLeft')show(Math.max(0,cur-1))});
+
+/* 1 */
+let a1=0;const S1=['Programs P1, P2, P3 are stored on disk. RAM holds only the OS. The CPU is idle.','OS finds free space in RAM and loads P1 from disk.','OS loads P2 into the next free space.','OS loads P3. RAM now holds all three programs.','CPU can execute only programs that are in RAM. It now runs P1.'];
+function r1(){const L=['P1','P2','P3'];$('d1').innerHTML=L.map((p,i)=>`<div class="box ${a1>i?'dim':''}" style="border-color:${PC[i]}">${p}</div>`).join('');
+$('ram1').innerHTML='<div class="box os">OS</div>'+L.map((p,i)=>a1>i?`<div class="box" style="background:${PC[i]};border-color:${PC[i]}">${p}</div>`:'<div class="box empty">free</div>').join('');
+$('cpu1').textContent=a1>=4?'Running P1':'Idle';$('t1').textContent=S1[a1]}
+/* 2 */
+let m2='f',k2=0;const F=[7,9,4];
+const V=[[['F',40]],[['P1',10],['F',30]],[['P1',10],['P2',14],['F',16]],[['P1',10],['P2',14],['P3',8],['F',8]],[['P1',10],['F',14],['P3',8],['F',8]],[['P1',10],['F',14],['P3',8],['F',8]]];
+const TF=['RAM is split into 4 fixed partitions of 10 KB each.','P1 (7 KB) gets a 10 KB partition. 3 KB wasted inside → internal fragmentation.','P2 (9 KB) gets a partition. 1 KB wasted.','P3 (4 KB) gets a partition. 6 KB wasted. Total internal waste = 3+1+6 = 10 KB.','P4 needs 12 KB but every partition is only 10 KB → cannot be loaded at all.'];
+const TV=['40 KB of RAM, completely free.','P1 (10 KB) is given exactly 10 KB. No waste.','P2 (14 KB) gets exactly 14 KB.','P3 (8 KB) gets 8 KB. 8 KB remains free.','P2 finishes and leaves. Free memory is now two holes: 14 KB and 8 KB.','P4 needs 20 KB. Total free = 22 KB, but no single hole is 20 KB → external fragmentation!'];
+function r2(){const max=m2=='f'?4:5;k2=Math.max(0,Math.min(max,k2));let h='',l='';
+if(m2=='f'){for(let i=0;i<4;i++){const p=i<k2&&i<3;h+=p?`<div class="part" style="flex:0 0 25%"><div class="fill" style="width:${F[i]*10}%;background:${PC[i]}">P${i+1}<small>${F[i]} KB</small></div><div class="waste" style="width:${(10-F[i])*10}%"><small>${10-F[i]}</small></div></div>`:`<div class="part" style="flex:0 0 25%"><div class="free">free<small>10 KB</small></div></div>`;l+=`<span>Partition ${i+1}</span>`}}
+else{V[k2].forEach(([n,s])=>{h+=`<div class="part" style="flex:0 0 ${s*2.5}%">`+(n=='F'?`<div class="free">${k2>=4?'hole':'free'}<small>${s} KB</small></div>`:`<div class="fill" style="width:100%;background:${PC[+n[1]-1]}">${n}<small>${s} KB</small></div>`)+'</div>';l+=`<span style="flex:0 0 ${s*2.5}%">${s}</span>`})}
+$('mem2').innerHTML=h;$('lab2').innerHTML=l;$('t2').textContent=(m2=='f'?TF:TV)[k2];$('b2f').className=m2=='f'?'':'g';$('b2v').className=m2=='v'?'':'g'}
+/* 3 */
+let al='first',k3=0;const B=[100,500,200,300,600],P=[212,417,112,426],AN={first:'First Fit takes the first block (from the top) that is big enough.',best:'Best Fit checks all blocks and takes the smallest one that is big enough.',worst:'Worst Fit checks all blocks and takes the largest one.'};
+function r3(){const fr=B.slice(),ch=B.map(()=>[]),res=[];let last=null,msg='Choose an algorithm, then press "Allocate next".';
+for(let i=0;i<k3;i++){const c=B.map((_,j)=>j).filter(j=>fr[j]>=P[i]);let j=c[0];if(al=='best')j=c.sort((x,y)=>fr[x]-fr[y])[0];if(al=='worst')j=c.sort((x,y)=>fr[y]-fr[x])[0];
+if(j==undefined){res[i]=0;last=null;msg=`P${i+1} (${P[i]} KB): no single block is big enough → it must WAIT. (Free space exists but is split into pieces.)`}
+else{const av=fr[j];fr[j]-=P[i];ch[j].push(i);res[i]=1;last=j;msg=`P${i+1} (${P[i]} KB) → Block ${j+1} (${av} KB free). ${AN[al]} Leftover: ${fr[j]} KB.`}}
+if(k3==4)msg+=` <br><b>Result: ${res.filter(x=>x).length} of 4 processes allocated.</b>`;
+$('q3').innerHTML=P.map((s,i)=>`<span class="chip ${res[i]===1?'ok':res[i]===0?'no':''}" style="${i<k3?'':'background:#334155'}">P${i+1}: ${s} KB</span>`).join('');
+$('bl3').innerHTML=B.map((s,j)=>`<div class="brow"><span>Block ${j+1}: ${s}</span><div class="bar ${j==last?'hl':''}" style="width:${s/6*.8}%;min-width:0;flex:none;width:${s/600*78}%">${ch[j].map(i=>`<div style="width:${P[i]/s*100}%;background:${PC[i]}">P${i+1}·${P[i]}</div>`).join('')}${fr[j]?`<div class="fr" style="width:${fr[j]/s*100}%">${fr[j]}</div>`:''}</div></div>`).join('');
+$('t3').innerHTML=msg;['first','best','worst'].forEach(a=>$('a3'+a).className=a==al?'':'g')}
+/* 4 */
+const PT=[5,2,7,0];
+function r4(){const a=+$('sl4').value,p=a>>2,o=a%4,f=PT[p];$('v4').textContent=a;
+$('lg4').innerHTML=PT.map((_,i)=>`<div class="pg ${i==p?'act':''}" style="background:${PC[i]}">Page ${i}<br><small>addr ${i*4}–${i*4+3}</small></div>`).join('');
+$('pt4').innerHTML='<tr><th>Page</th><th>Frame</th></tr>'+PT.map((f,i)=>`<tr class="${i==p?'hl':''}"><td>${i}</td><td>${f}</td></tr>`).join('');
+$('ph4').innerHTML=[0,1,2,3,4,5,6,7].map(i=>{const pg=PT.indexOf(i);return `<div class="pg ${i==f?'act':''}" style="background:${pg<0?'#334155':PC[pg]};padding:4px 14px;${pg<0&&i!=f?'':'opacity:'+(i==f?1:.35)}">Frame ${i} ${pg<0?'(free)':'· P'+pg}</div>`}).join('');
+$('c4').innerHTML=`Page = ${a} ÷ 4 = <b>${p}</b><br>Offset = ${a} mod 4 = <b>${o}</b><br>Page table[${p}] → Frame <b>${f}</b><br>Physical = ${f}×4 + ${o} = <b style="color:#4ade80">${f*4+o}</b>`}
+/* 5 */
+const SG=[['Code',1000,400],['Data',2000,300],['Stack',3000,200]];
+function r5(){const s=+$("sel5").value,o=+$('o5').value,[n,b,l]=SG[s],ok=o<l&&o>=0;
+$('sg5').innerHTML=SG.map(([n,b,l],i)=>`<div style="left:${b/34}%;width:${l/34}%;background:${PC[i]};${i==s?'outline:3px solid #fff':'opacity:.5'}">${n}</div>`).join('')+(ok?`<i style="left:${(b+o)/34}%"></i>`:'');
+[0,1,2].forEach(i=>$('r5_'+i).className=i==s?'hl':'');
+$('c5').innerHTML=ok?`Offset ${o} &lt; limit ${l} ✔<br>Physical = ${b} + ${o} = <b style="color:#4ade80">${b+o}</b>`:`Offset ${o} ≥ limit ${l} ✘<br><b style="color:#f87171">TRAP: Segmentation fault!</b>`;
+$('t5').textContent=ok?`CPU asks for byte ${o} of the ${n} segment. It is inside the segment, so address = base + offset.`:`Byte ${o} is outside the ${n} segment (size ${l}). The OS blocks the access and stops the program. This protects other segments.`}
+/* Simulator for page faults / replacement */
+function Sim(id,ref,nf,fixedAlgo,tid){const el=$(id);let algo=fixedAlgo||'fifo',st=[],c=-1,tm=null;
+el.innerHTML=`<div style="color:#94a3b8">Reference string (pages requested by CPU):</div><div id="${id}r"></div><div class="fr3" id="${id}f"></div><div class="stat" id="${id}s"></div>
+<div class="ctl">${fixedAlgo?'':`<select id="${id}a"><option value="fifo">FIFO</option><option value="lru">LRU</option><option value="opt">Optimal</option></select>`}<button id="${id}n">Next ▶</button><button class="g" id="${id}p">◀ Previous</button><button id="${id}g">Start ⏵</button><button class="g" id="${id}x">Reset</button></div>`;
+function comp(){const sl=Array(nf).fill(null),ld=[],us=[];let f=0;st=[];
+for(let i=0;i<ref.length;i++){const p=ref[i];let k=sl.indexOf(p),fault=k<0,ev=null,why='';
+if(fault){f++;k=sl.indexOf(null);if(k<0){if(algo=='fifo'){k=ld.indexOf(Math.min(...ld));why='it was loaded first (oldest)'}
+else if(algo=='lru'){k=us.indexOf(Math.min(...us));why='it was used longest ago'}
+else{const nx=sl.map(x=>{const q=ref.indexOf(x,i+1);return q<0?1e9:q});k=nx.indexOf(Math.max(...nx));why=nx[k]==1e9?'it is never used again':'it is needed farthest in the future'}ev=sl[k]}
+sl[k]=p;ld[k]=i}us[k]=i;st.push({p,k,fault,ev,why,sl:[...sl],f,i})}}
+function draw(){const s=st[c];$(id+'r').innerHTML=ref.map((p,i)=>`<span class="chip ${i==c?'now':i<c?'past':''}" style="background:${PC[p%8]}">${p}</span>`).join('');
+const sl=s?s.sl:Array(nf).fill(null);$(id+'f').innerHTML=sl.map((p,j)=>`<div class="frame ${s&&s.k==j?(s.fault?'f':'h'):''}" style="background:${p==null?'#0f172a':PC[p%8]}">${p==null?'':p}<small>Frame ${j}</small></div>`).join('');
+const f=s?s.f:0,h=s?s.i+1-f:0;$(id+'s').innerHTML=`<span class="red">Faults: ${f}</span><span class="grn">Hits: ${h}</span>`;
+$(tid).innerHTML=!s?'Press <b>Next</b> or <b>Start</b>. Red glow = page fault, green glow = hit.':(s.fault?`Page ${s.p} is not in RAM → <b class="bad">PAGE FAULT</b>. `+(s.ev!=null?`RAM is full: evict page ${s.ev} (${s.why}) and load page ${s.p} from disk.`:`A frame is free: load page ${s.p} from disk (demand paging).`):`Page ${s.p} is already in RAM → <b class="ok2">HIT</b>. No disk access needed.`)+(c==ref.length-1?`<br><b>Done: ${s.f} faults, ${ref.length-s.f} hits.</b>`:'')}
+function stop(){clearInterval(tm);tm=null;$(id+'g').textContent='Start ⏵'}
+function go(d){c=Math.max(-1,Math.min(ref.length-1,c+d));draw();if(c==ref.length-1)stop()}
+$(id+'n').onclick=()=>{stop();go(1)};$(id+'p').onclick=()=>{stop();go(-1)};$(id+'x').onclick=()=>{stop();c=-1;draw()};
+$(id+'g').onclick=()=>{if(tm)return stop();if(c==ref.length-1)c=-1;$(id+'g').textContent='Pause ⏸';tm=setInterval(()=>go(1),1200)};
+if(!fixedAlgo)$(id+'a').onchange=e=>{stop();algo=e.target.value;comp();c=-1;draw()};
+comp();draw()}
+Sim('sim6',[1,2,1,3,2,1],3,'fifo','sim6t');
+Sim('sim7',[7,0,1,2,0,3,0,4,2,3,0,3,2,1,2,0,1,7,0,1],3,null,'sim7t');
+/* 8 */
+let n8=2;const U=[25,50,75,95,60,35,20,10];
+function r8(){const per=Math.floor(12/n8),th=per<3;let h='';for(let i=0;i<12;i++){const o=Math.floor(i/per);h+=o<n8&&per>0?`<div style="background:${PC[o]};border:0">P${o+1}</div>`:'<div>—</div>'}
+$('ram8').innerHTML=h;$('ub8').innerHTML=U.map((u,i)=>`<div class="${i==n8-1?'cur'+(th?' t':''):''}" style="height:${u*1.6}px">${u}%<br><small>${i+1} proc</small></div>`).join('');
+$('t8').innerHTML=th?`<b class="bad">THRASHING!</b> ${n8} processes share 12 frames → only ${per} frame(s) each (need 3). Constant page faults; CPU utilization falls to ${U[n8-1]}%.`:`<b class="ok2">Healthy.</b> ${n8} process(es), ${per} frames each (need 3). CPU utilization ${U[n8-1]}%. ${n8==4?'Add one more process and watch what happens...':''}`}
+r1();r2();r3();r4();r5();r8();show(0);
+</script></body></html>
